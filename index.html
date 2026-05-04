@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Research Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00ff9d;
+    --accent2: #7b61ff;
+    --danger: #ff4d6d;
+    --warning: #ffbe0b;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-display); min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,255,157,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,157,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; position: relative; z-index: 1; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .header-left h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+  .header-left h1 span { color: var(--accent); }
+  .header-left p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
+  .status-pill { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); padding: 8px 16px; border-radius: 100px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+  .status-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  .setup-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+  .panel-title { font-size: 0.65rem; font-family: var(--font-mono); letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; }
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media(max-width:600px){.input-grid{grid-template-columns:1fr}}
+  .input-group { display: flex; flex-direction: column; gap: 8px; }
+  .input-group label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .input-group input, .input-group select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); font-family: var(--font-mono); font-size: 0.75rem; outline: none; transition: border-color 0.2s; width: 100%; }
+  .input-group input:focus, .input-group select:focus { border-color: var(--accent); }
+  .input-group input::placeholder { color: var(--muted); }
+  .input-group.full { grid-column: 1 / -1; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; cursor: pointer; border: none; transition: all 0.2s; text-transform: uppercase; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover:not(:disabled) { box-shadow: 0 0 20px rgba(0,255,157,0.4); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .stats-bar { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 24px; }
+  @media(max-width:700px){.stats-bar{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:450px){.stats-bar{grid-template-columns:repeat(2,1fr)}}
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+  .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1; margin-bottom: 6px; }
+  .stat-label { font-family: var(--font-mono); font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .progress-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; display: none; }
+  .progress-section.visible { display: block; }
+  .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); letter-spacing: 0.05em; }
+  .progress-pct { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); }
+  .progress-track { height: 4px; background: var(--surface2); border-radius: 100px; overflow: hidden; margin-bottom: 12px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,var(--accent),var(--accent2)); border-radius: 100px; transition: width 0.5s ease; width: 0%; }
+  .current-lead { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); }
+  .current-lead span { color: var(--text); }
+  .step-indicator { font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent2); margin-top: 8px; min-height: 16px; }
+  .log-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; display: none; }
+  .log-section.visible { display: block; }
+  .log-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; height: 140px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.65rem; line-height: 1.8; }
+  .log-entry { color: var(--muted); }
+  .log-entry.success { color: var(--accent); }
+  .log-entry.error { color: var(--danger); }
+  .log-entry.info { color: var(--accent2); }
+  .log-entry.search { color: var(--warning); }
+  .results-section { display: none; }
+  .results-section.visible { display: block; }
+  .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+  .results-title { font-size: 1rem; font-weight: 700; }
+  .leads-grid { display: flex; flex-direction: column; gap: 12px; }
+  .lead-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.2s, transform 0.2s; animation: slideIn 0.3s ease; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+  .lead-card:hover { border-color: var(--accent2); transform: translateY(-1px); }
+  .lead-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 12px; }
+  .lead-name { font-size: 1rem; font-weight: 700; }
+  .lead-address { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); margin-top: 3px; }
+  .badge-row { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+  .badge { padding: 4px 10px; border-radius: 100px; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+  .badge-high { background: rgba(0,255,157,0.15); color: var(--accent); border: 1px solid rgba(0,255,157,0.3); }
+  .badge-medium { background: rgba(255,190,11,0.15); color: var(--warning); border: 1px solid rgba(255,190,11,0.3); }
+  .badge-low { background: rgba(255,77,109,0.15); color: var(--danger); border: 1px solid rgba(255,77,109,0.3); }
+  .badge-pending { background: rgba(107,107,138,0.15); color: var(--muted); border: 1px solid var(--border); }
+  .badge-searched { background: rgba(123,97,255,0.15); color: var(--accent2); border: 1px solid rgba(123,97,255,0.3); }
+  .lead-meta { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .meta-item { display: flex; flex-direction: column; gap: 3px; }
+  .meta-label { font-family: var(--font-mono); font-size: 0.55rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .meta-value { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text); }
+  .owner-found { color: var(--accent); font-weight: 700; }
+  .search-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); line-height: 1.7; }
+  .search-preview-label { color: var(--warning); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .brief-section { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-top: 12px; }
+  .brief-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .brief-text { font-size: 0.8rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+  .processing-indicator { display: flex; align-items: center; gap: 8px; color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .error-banner { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); border-radius: 8px; padding: 12px 16px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--danger); margin-top: 12px; display: none; }
+  .info-note { background: rgba(123,97,255,0.1); border: 1px solid rgba(123,97,255,0.3); border-radius: 8px; padding: 12px 16px; font-family: var(--font-mono); font-size: 0.65rem; color: #a89fff; line-height: 1.6; margin-top: 12px; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state p { font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>Lead <span>Research</span> Agent</h1>
+      <p>// SERPER WEB SEARCH + CLAUDE AI — PUBLIC DATA ONLY</p>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">IDLE</span>
+    </div>
+  </div>
+
+  <div class="setup-panel">
+    <div class="panel-title">// 01 — CONFIGURATION</div>
+    <div class="input-grid">
+      <div class="input-group full">
+        <label>Claude API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-api03-..." />
+      </div>
+      <div class="input-group full">
+        <label>Serper API Key (public Google search)</label>
+        <input type="password" id="serperKey" placeholder="Your serper.dev API key..." />
+      </div>
+      <div class="input-group full">
+        <label>Google Sheet ID or Full URL</label>
+        <input type="text" id="sheetId" placeholder="Paste full Sheet URL or just the ID" />
+      </div>
+      <div class="input-group full">
+        <label>Sheet Tab Name (optional — leave blank for first tab)</label>
+        <input type="text" id="sheetTab" placeholder="e.g. Local Businesses (No Website)" />
+      </div>
+      <div class="input-group">
+        <label>Batch Size</label>
+        <select id="batchSize">
+          <option value="5">5 leads</option>
+          <option value="10" selected>10 leads</option>
+          <option value="25">25 leads</option>
+          <option value="50">50 leads</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Priority Filter</label>
+        <select id="priorityFilter">
+          <option value="all">All Leads</option>
+          <option value="high">High Confidence Only</option>
+          <option value="medium">Medium + High</option>
+        </select>
+      </div>
+    </div>
+    <div class="info-note">ℹ️ Your Sheet must be shared as "Anyone with the link can view". Sheet ID is the string between /d/ and /edit in your Sheet URL. All keys are saved in your browser only — never sent anywhere except the official APIs.</div>
+    <div class="divider"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="startBtn" onclick="startAgent()">▶ RUN AGENT</button>
+      <button class="btn btn-secondary" onclick="loadSheet()">↻ LOAD SHEET</button>
+      <button class="btn btn-danger" id="stopBtn" onclick="stopAgent()" style="display:none">■ STOP</button>
+    </div>
+    <div class="error-banner" id="errorBanner"></div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total Leads</div></div>
+    <div class="stat-card"><div class="stat-value" id="statProcessed" style="color:var(--accent2)">0</div><div class="stat-label">Processed</div></div>
+    <div class="stat-card"><div class="stat-value" id="statOwners" style="color:var(--warning)">0</div><div class="stat-label">Owners Found</div></div>
+    <div class="stat-card"><div class="stat-value" id="statSearches" style="color:var(--accent)">0</div><div class="stat-label">Searches Run</div></div>
+    <div class="stat-card"><div class="stat-value" id="statErrors" style="color:var(--danger)">0</div><div class="stat-label">Errors</div></div>
+  </div>
+
+  <div class="progress-section" id="progressSection">
+    <div class="panel-title">// 02 — AGENT ACTIVITY</div>
+    <div class="progress-header">
+      <span class="progress-label" id="progressLabel">PROCESSING LEADS...</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="current-lead">Researching: <span id="currentLead">—</span></div>
+    <div class="step-indicator" id="stepIndicator"></div>
+  </div>
+
+  <div class="log-section" id="logSection">
+    <div class="panel-title">// 03 — AGENT LOG</div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <div class="results-title">Research Results</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="exportCSV()">↓ EXPORT CSV</button>
+        <button class="btn btn-secondary" onclick="clearResults()">✕ CLEAR</button>
+      </div>
+    </div>
+    <div class="leads-grid" id="leadsGrid">
+      <div class="empty-state">
+        <div class="empty-icon">◎</div>
+        <p>No results yet.<br>Load your sheet and run the agent to begin.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  let isRunning=false, shouldStop=false, allLeads=[], processedLeads=[], errorCount=0, searchCount=0;
+
+  async function loadSheet() {
+    let input = document.getElementById('sheetId').value.trim();
+    if (!input) return showError('Please enter your Google Sheet ID or URL');
+    // Auto-extract ID from full URL if pasted
+    const match = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    const sheetId = match ? match[1] : input;
+    document.getElementById('sheetId').value = sheetId;
+    localStorage.setItem('lra_sheetId', sheetId);
+    showError('');
+    addLog('Loading sheet data...','info');
+    try {
+      const tabName = document.getElementById('sheetTab').value.trim();
+      const tabParam = tabName ? `&sheet=${encodeURIComponent(tabName)}` : '';
+      const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv${tabParam}`);
+      if (!res.ok) throw new Error('Could not load sheet. Make sure it is shared as "Anyone with the link can view".');
+      const csv = await res.text();
+      allLeads = parseCSV(csv);
+      const filter = document.getElementById('priorityFilter').value;
+      if (filter==='high') allLeads=allLeads.filter(l=>l.confidence?.toLowerCase()==='high');
+      if (filter==='medium') allLeads=allLeads.filter(l=>['high','medium'].includes(l.confidence?.toLowerCase()));
+      document.getElementById('statTotal').textContent = allLeads.length;
+      addLog(`✓ Loaded ${allLeads.length} leads`,'success');
+      document.getElementById('logSection').classList.add('visible');
+      document.getElementById('resultsSection').classList.add('visible');
+    } catch(e) { showError(e.message); addLog('✗ '+e.message,'error'); }
+  }
+
+  function parseCSV(csv) {
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
+    return lines.slice(1).map(line=>{
+      const vals=parseCSVLine(line), obj={};
+      headers.forEach((h,i)=>obj[h]=(vals[i]||'').replace(/"/g,'').trim());
+      // Normalize column names to support various header formats
+      if(obj['business name']) obj.name = obj['business name'];
+      if(obj['company name']) obj.name = obj['company name'];
+      if(obj['business']) obj.name = obj['business'];
+      if(obj['phone number']) obj.phone = obj['phone number'];
+      if(obj['owner name']) obj.ownernameprefill = obj['owner name'];
+      return obj;
+    }).filter(l=>l.name&&l.name.toLowerCase()!=='business name'&&l.name.toLowerCase()!=='name');
+  }
+
+  function parseCSVLine(line) {
+    const result=[]; let current='', inQuotes=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){inQuotes=!inQuotes;continue;}
+      if(line[i]===','&&!inQuotes){result.push(current);current='';continue;}
+      current+=line[i];
+    }
+    result.push(current); return result;
+  }
+
+  async function searchOwner(name, address, serperKey) {
+    const query = `"${name}" ${address||'Houston TX'} owner`;
+    addLog(`🔍 Searching: ${query}`,'search');
+    setStep('Step 1/2 — Searching public records...');
+    const res = await fetch('https://google.serper.dev/search',{
+      method:'POST',
+      headers:{'X-API-KEY':serperKey,'Content-Type':'application/json'},
+      body:JSON.stringify({q:query,num:5,gl:'us',hl:'en'})
+    });
+    if(!res.ok){const e=await res.json();throw new Error('Serper: '+(e.message||res.status));}
+    const data=await res.json();
+    searchCount++;
+    document.getElementById('statSearches').textContent=searchCount;
+    const snippets=[];
+    if(data.knowledgeGraph){const kg=data.knowledgeGraph;if(kg.title)snippets.push(`${kg.title}: ${kg.description||''}`);}
+    if(data.organic)data.organic.slice(0,5).forEach(r=>{if(r.title||r.snippet)snippets.push(`${r.title||''}: ${r.snippet||''}`);});
+    return snippets.join('\n');
+  }
+
+  async function researchLead(lead, apiKey, serperKey) {
+    let searchResults='';
+    try { searchResults=await searchOwner(lead.name,lead.address,serperKey); }
+    catch(e){ addLog(`⚠ Search failed: ${e.message}`,'error'); searchResults='Search unavailable'; }
+
+    setStep('Step 2/2 — Claude writing call brief...');
+    addLog(`🤖 Claude analyzing: ${lead.name}`,'info');
+
+    const prompt=`You are a cold call research assistant for a web design and maintenance agency in Houston, TX.
+
+Business info:
+- Name: ${lead.name}
+- Address: ${lead.address||'Houston, TX'}
+- Why a good lead: ${lead.reasons||'No website'}
+- Pitch tips: ${lead['pitch tips']||lead.pitchtips||'N/A'}
+- Source: ${lead.source||'N/A'}
+- Phone: ${lead.phone||'N/A'}
+- Confidence: ${lead.confidence||'N/A'}
+
+Public search results:
+${searchResults||'None available'}
+
+Write a cold call brief. Format EXACTLY like this:
+
+OWNER: [Owner name from search results, or "Unknown"]
+OWNER_CONFIDENCE: [High/Medium/Low]
+OPENING_LINE: [One specific opening sentence referencing their actual business]
+PAIN_POINT: [Single most compelling pain point]
+OBJECTION: [Most likely objection]
+REBUTTAL: [One sentence rebuttal]
+PITCH: [Best service to pitch first, one sentence]
+
+Be specific to THIS business. Use real search result details where possible.`;
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Claude API error');}
+    const data=await res.json();
+    const result=parseResult(data.content[0].text);
+    result.searchSnippet=searchResults?searchResults.slice(0,250)+'...':'';
+    return result;
+  }
+
+  function parseResult(text) {
+    const get=key=>{const m=text.match(new RegExp(key+':\\s*(.+)'));return m?m[1].trim():'';};
+    return {ownerName:get('OWNER'),ownerConfidence:get('OWNER_CONFIDENCE'),openingLine:get('OPENING_LINE'),painPoint:get('PAIN_POINT'),objection:get('OBJECTION'),rebuttal:get('REBUTTAL'),pitch:get('PITCH'),raw:text};
+  }
+
+  async function startAgent() {
+    const apiKey=document.getElementById('apiKey').value.trim();
+    const serperKey=document.getElementById('serperKey').value.trim();
+    if(!apiKey) return showError('Please enter your Claude API key');
+    if(!serperKey) return showError('Please enter your Serper API key');
+    if(allLeads.length===0){await loadSheet();if(allLeads.length===0)return;}
+    const batchSize=parseInt(document.getElementById('batchSize').value);
+    const toProcess=allLeads.filter(l=>!l._processed).slice(0,batchSize);
+    if(toProcess.length===0) return showError('All leads processed. Click CLEAR to rerun.');
+
+    isRunning=true; shouldStop=false; errorCount=0; searchCount=0;
+    document.getElementById('startBtn').disabled=true;
+    document.getElementById('stopBtn').style.display='inline-flex';
+    document.getElementById('statusDot').classList.add('active');
+    document.getElementById('statusText').textContent='RUNNING';
+    document.getElementById('progressSection').classList.add('visible');
+    document.getElementById('logSection').classList.add('visible');
+    document.getElementById('resultsSection').classList.add('visible');
+    document.getElementById('leadsGrid').innerHTML='';
+    showError('');
+    addLog(`▶ Agent started — ${toProcess.length} leads queued`,'info');
+    addLog(`🔍 Serper search: ENABLED | 🤖 Claude AI: ENABLED`,'search');
+
+    for(let i=0;i<toProcess.length;i++){
+      if(shouldStop){addLog('■ Stopped by user','error');break;}
+      const lead=toProcess[i];
+      const pct=Math.round((i/toProcess.length)*100);
+      document.getElementById('progressFill').style.width=pct+'%';
+      document.getElementById('progressPct').textContent=pct+'%';
+      document.getElementById('currentLead').textContent=lead.name;
+      document.getElementById('statProcessed').textContent=i;
+      addLog(`— [${i+1}/${toProcess.length}] ${lead.name}`,'');
+      renderCard(lead,i,'processing');
+      try {
+        const result=await researchLead(lead,apiKey,serperKey);
+        lead._result=result; lead._processed=true; processedLeads.push(lead);
+        if(result.ownerName&&result.ownerName.toLowerCase()!=='unknown'){
+          document.getElementById('statOwners').textContent=parseInt(document.getElementById('statOwners').textContent)+1;
+        }
+        renderCard(lead,i,'done');
+        addLog(`✓ Owner: ${result.ownerName||'Unknown'} (${result.ownerConfidence})`,'success');
+      } catch(e){
+        errorCount++;
+        document.getElementById('statErrors').textContent=errorCount;
+        lead._error=e.message; renderCard(lead,i,'error');
+        addLog(`✗ ${e.message}`,'error');
+      }
+      document.getElementById('statProcessed').textContent=i+1;
+      setStep('');
+      if(i<toProcess.length-1&&!shouldStop) await sleep(1200);
+    }
+
+    document.getElementById('progressFill').style.width='100%';
+    document.getElementById('progressPct').textContent='100%';
+    document.getElementById('progressLabel').textContent=shouldStop?'STOPPED':'COMPLETE';
+    document.getElementById('currentLead').textContent='—';
+    document.getElementById('statusDot').classList.remove('active');
+    document.getElementById('statusText').textContent='IDLE';
+    document.getElementById('startBtn').disabled=false;
+    document.getElementById('stopBtn').style.display='none';
+    isRunning=false;
+    addLog(`✓ Done — ${document.getElementById('statProcessed').textContent} processed, ${document.getElementById('statOwners').textContent} owners found`,'success');
+  }
+
+  function stopAgent(){shouldStop=true;document.getElementById('statusText').textContent='STOPPING...';}
+
+  function renderCard(lead,index,state){
+    const grid=document.getElementById('leadsGrid');
+    const existing=document.getElementById(`card-${index}`);
+    const conf=(lead.confidence||'pending').toLowerCase();
+    const confClass=['high','medium','low'].includes(conf)?`badge-${conf}`:'badge-pending';
+    let briefHTML='';
+    if(state==='processing'){
+      briefHTML=`<div class="processing-indicator"><div class="spinner"></div><span>Searching public records...</span></div>`;
+    } else if(state==='error'){
+      briefHTML=`<div class="brief-section"><div class="brief-label">ERROR</div><div class="brief-text" style="color:var(--danger)">${lead._error||'Unknown error'}</div></div>`;
+    } else if(state==='done'&&lead._result){
+      const r=lead._result;
+      const sp=r.searchSnippet?`<div class="search-preview"><div class="search-preview-label">🔍 Public search results used</div>${r.searchSnippet}</div>`:'';
+      briefHTML=`${sp}<div class="brief-section"><div class="brief-label">// CALL BRIEF</div><div class="brief-text"><strong style="color:var(--accent)">OPENING:</strong> ${r.openingLine}\n\n<strong style="color:var(--accent)">PAIN POINT:</strong> ${r.painPoint}\n\n<strong style="color:var(--accent)">OBJECTION:</strong> ${r.objection}\n<strong style="color:var(--accent)">REBUTTAL:</strong> ${r.rebuttal}\n\n<strong style="color:var(--accent)">PITCH:</strong> ${r.pitch}</div></div>`;
+    }
+    const ownerHTML=lead._result?`<div class="meta-item"><span class="meta-label">Owner</span><span class="meta-value owner-found">${lead._result.ownerName||'—'}</span></div><div class="meta-item"><span class="meta-label">Confidence</span><span class="meta-value">${lead._result.ownerConfidence||'—'}</span></div>`:'';
+    const cardHTML=`<div class="lead-card" id="card-${index}"><div class="lead-card-header"><div><div class="lead-name">${lead.name}</div><div class="lead-address">${lead.address||''}</div></div><div class="badge-row"><span class="badge ${confClass}">${conf}</span>${state==='done'?'<span class="badge badge-searched">✓ SEARCHED</span>':''}</div></div><div class="lead-meta"><div class="meta-item"><span class="meta-label">Phone</span><span class="meta-value">${lead.phone||'—'}</span></div><div class="meta-item"><span class="meta-label">Source</span><span class="meta-value">${lead.source||'—'}</span></div>${ownerHTML}</div>${briefHTML}</div>`;
+    if(existing) existing.outerHTML=cardHTML;
+    else grid.insertAdjacentHTML('beforeend',cardHTML);
+  }
+
+  function exportCSV(){
+    if(processedLeads.length===0) return showError('No results to export yet');
+    const headers=['Name','Address','Phone','Source','Confidence','Pitch Tips','Reasons','Owner Name','Owner Confidence','Opening Line','Pain Point','Objection','Rebuttal','Pitch'];
+    const rows=processedLeads.map(l=>{
+      const r=l._result||{};
+      return [l.name,l.address,l.phone,l.source,l.confidence,l['pitch tips']||l.pitchtips||'',l.reasons,r.ownerName,r.ownerConfidence,r.openingLine,r.painPoint,r.objection,r.rebuttal,r.pitch].map(v=>`"${(v||'').replace(/"/g,'""')}"`);
+    });
+    const csv=[headers,...rows].map(r=>r.join(',')).join('\n');
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download=`lead-research-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    addLog('✓ CSV exported','success');
+  }
+
+  function clearResults(){
+    processedLeads=[]; searchCount=0;
+    allLeads.forEach(l=>{delete l._processed;delete l._result;delete l._error;});
+    document.getElementById('leadsGrid').innerHTML='<div class="empty-state"><div class="empty-icon">◎</div><p>Cleared. Run the agent again.</p></div>';
+    ['statProcessed','statOwners','statErrors','statSearches'].forEach(id=>document.getElementById(id).textContent='0');
+    document.getElementById('progressFill').style.width='0%';
+    document.getElementById('progressPct').textContent='0%';
+    document.getElementById('progressLabel').textContent='PROCESSING LEADS...';
+  }
+
+  function setStep(t){document.getElementById('stepIndicator').textContent=t;}
+  function addLog(msg,type=''){const b=document.getElementById('logBox');const e=document.createElement('div');e.className=`log-entry ${type}`;e.textContent=msg?`[${new Date().toLocaleTimeString()}] ${msg}`:'';b.appendChild(e);b.scrollTop=b.scrollHeight;}
+  function showError(msg){const b=document.getElementById('errorBanner');b.textContent=msg;b.style.display=msg?'block':'none';}
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+  ['apiKey','serperKey','sheetId','sheetTab'].forEach(id=>{
+    const el=document.getElementById(id);
+    const saved=localStorage.getItem('lra_'+id);
+    if(saved)el.value=saved;
+    el.addEventListener('change',()=>localStorage.setItem('lra_'+id,el.value));
+  });
+</script>
+</body>
+</html>
