@@ -326,12 +326,17 @@ PITCH: [Best service to pitch first, one sentence]
 
 Be specific to THIS business. Use real search result details where possible.`;
 
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages');
+    const res=await fetch(proxyUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
-    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Claude API error');}
+    if(!res.ok){
+      let errMsg='Claude API error: '+res.status;
+      try{const e=await res.json();errMsg=e.error?.message||errMsg;}catch(e){}
+      throw new Error(errMsg);
+    }
     const data=await res.json();
     const result=parseResult(data.content[0].text);
     result.searchSnippet=searchResults?searchResults.slice(0,250)+'...':'';
