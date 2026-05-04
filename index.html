@@ -380,15 +380,14 @@ function exportCSV(){
 }
 
 function clearResults(){
+  // Clears display only — completed lead memory is preserved so leads are not reprocessed
   done=[];searches=0;
-  allLeads.forEach(function(l){delete l._done;delete l._res;delete l._err;});
-  localStorage.removeItem('lra_done');
-  document.getElementById('cardsGrid').innerHTML='<div class="empty"><div class="ei">◎</div><p>Cleared. Run the agent again.</p></div>';
+  document.getElementById('cardsGrid').innerHTML='<div class="empty"><div class="ei">◎</div><p>Display cleared. Completed leads still remembered.<br>Use RESET MEMORY to reprocess all leads from scratch.</p></div>';
   ['sProc','sOwn','sErr','sSrch'].forEach(function(id){document.getElementById(id).textContent='0';});
   document.getElementById('progFill').style.width='0%';
   document.getElementById('progPct').textContent='0%';
   document.getElementById('progLabel').textContent='PROCESSING...';
-  log('Results cleared','inf');
+  log('Display cleared — memory preserved','inf');
 }
 
 function step(t){document.getElementById('stepTxt').textContent=t;}
