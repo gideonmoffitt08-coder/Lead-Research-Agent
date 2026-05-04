@@ -240,8 +240,13 @@
       const filter = document.getElementById('priorityFilter').value;
       if (filter==='high') allLeads=allLeads.filter(l=>l.confidence?.toLowerCase()==='high');
       if (filter==='medium') allLeads=allLeads.filter(l=>['high','medium'].includes(l.confidence?.toLowerCase()));
+      // Mark already completed leads from localStorage
+      const completed = getCompletedLeads();
+      let alreadyDone = 0;
+      allLeads.forEach(l=>{ if(completed.includes(l.name)){ l._processed=true; alreadyDone++; } });
       document.getElementById('statTotal').textContent = allLeads.length;
-      addLog(`✓ Loaded ${allLeads.length} leads`,'success');
+      const remaining = allLeads.length - alreadyDone;
+      addLog(`✓ Loaded ${allLeads.length} leads — ${alreadyDone} already done, ${remaining} remaining`,'success');
       document.getElementById('logSection').classList.add('visible');
       document.getElementById('resultsSection').classList.add('visible');
     } catch(e) { showError(e.message); addLog('✗ '+e.message,'error'); }
@@ -383,6 +388,7 @@ Be specific to THIS business. Use real search result details where possible.`;
       try {
         const result=await researchLead(lead,apiKey,serperKey);
         lead._result=result; lead._processed=true; processedLeads.push(lead);
+        saveCompletedLead(lead.name);
         if(result.ownerName&&result.ownerName.toLowerCase()!=='unknown'){
           document.getElementById('statOwners').textContent=parseInt(document.getElementById('statOwners').textContent)+1;
         }
@@ -451,6 +457,7 @@ Be specific to THIS business. Use real search result details where possible.`;
 
   function clearResults(){
     processedLeads=[]; searchCount=0;
+    clearCompletedLeads();
     allLeads.forEach(l=>{delete l._processed;delete l._result;delete l._error;});
     document.getElementById('leadsGrid').innerHTML='<div class="empty-state"><div class="empty-icon">◎</div><p>Cleared. Run the agent again.</p></div>';
     ['statProcessed','statOwners','statErrors','statSearches'].forEach(id=>document.getElementById(id).textContent='0');
